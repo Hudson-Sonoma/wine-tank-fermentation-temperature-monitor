@@ -14,6 +14,12 @@ One 18650-class lithium cell runs it for roughly a year. Insert the probe in the
 
 Commercial tank probes are expensive and usually wired. This is a $40 build that reports every minute and shows up as a native sensor in Home Assistant.
 
+A customer came to me wanting to measure fermenting wine tank temperatures, track them over time, and eventually control tank temperature using a glycol loop. 
+ 
+The result is a battery-powered sensor node assembled from modules: a Seeed XIAO nRF52840 on a Grove base, reading a stainless DS18B20 probe and reporting to nearby devices over BTHome. Firmware is CircuitPython, based on sample code published by Seeed.
+ 
+The rest of the system is off-the-shelf. Home Assistant provides the historian and sensor history. Temperature control is being prototyped with a Shelly Plug, which can listen for BTHome devices directly and drive a solenoid valve on the glycol loop.
+
 ## Features
 
 - **DS18B20 waterproof probe** — stainless steel, 12-bit resolution, +- 1.0 C / 1.8 F
@@ -24,6 +30,32 @@ Commercial tank probes are expensive and usually wired. This is a $40 build that
 - **Works with any BTHome receiver** — Home Assistant, or a phone app for a quick spot check
 
 ![Temperature sensor insides](images/insides.jpg)
+
+---
+
+## Design decisions
+ 
+### Choosing the radio
+ 
+The first challenge was networking. I evaluated LoRaWAN and 915 MHz EnOcean FSK before settling on BTHome. The deciding factor was that BTHome can be received by the phones everyone already carries, and the same advertisement is read by Home Assistant and by the Shelly Plug that will eventually control the glycol valve. LoRaWAN and EnOcean both meant another gateway.
+ 
+I also tried an IN100 BLE transmitter. Its battery life is excellent, but the XIAO nRF52840 turned out to have better BLE performance and far more functionality. CircuitPython and its light sleep implementation are both very good on the nRF52840, which made the development loop fast.
+ 
+### Getting the battery life
+ 
+The second challenge was battery life. An earlier revision built on an ESP32-C3 running ESPHome drew too much current to be practical for more than a 1-month deployment.
+ 
+Moving to the nRF52840 with CircuitPython light sleep brought average consumption down to **0.67 mA at a 30-second update interval**. With a 5500 mAh lithium cell that works out to **342 days**.
+ 
+An inexpensive off-the-shelf enclosure and cable glands keep the electronics dry in a wet production environment.
+ 
+---
+ 
+## Status
+ 
+Several units are installed and running at a local cidery.
+ 
+We are now prototyping closed-loop control: a Shelly Plug listens for the sensor's BTHome advertisements and switches a solenoid valve on the glycol loop, closing the loop between measurement and control.
 
 ---
 
@@ -50,7 +82,7 @@ Commercial tank probes are expensive and usually wired. This is a $40 build that
 ```
                           3V3
                            │
-                           ├──── DS18B20 VDD (red) ----------
+                           ├────────────────────────────────  ---------- DS18B20 VDD (red)
                            │                                │
                         [4.7kΩ]                           BAT85   
                            │                                │
@@ -59,7 +91,7 @@ XIAO D0 ────[100Ω]─────────┴───────�
                                                           BAT85
                                                             │
                                                             │
-                     GND   ──── DS18B20 GND (black) ---------
+                     GND   ─────────────────────────────────  --------- DS18B20 GND (black)
 ```
 
 - **D0** — 1-Wire data, through the 100 Ω series resistor
@@ -203,5 +235,3 @@ See the notes in `code.py`:
 ## License
 
 GPL3. 
-
-Please feel fee to use it, break it, improve it.
