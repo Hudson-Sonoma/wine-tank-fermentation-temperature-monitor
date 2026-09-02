@@ -1,8 +1,8 @@
 # wine-tank-fermentation-temperature-monitor
 
-A battery-powered, waterproof temperature probe for monitoring fermenting wine. It broadcasts readings over Bluetooth LE using the [BTHome v2](https://bthome.io/) format, so Home Assistant picks it up automatically with no hub, no gateway, and no pairing. 
+A battery-powered, waterproof temperature probe for monitoring fermenting wine. It broadcasts readings over Bluetooth LE using the [BTHome v2](https://bthome.io/) format, so Home Assistant picks it up automatically (no hub, no gateway, no pairing) 
 
-One 18650-class lithium cell runs it for roughly a year. Insert the probe in the tank thermowell, stick the enclosure on the outside, and forget about it until harvest is over.
+One 18650-class lithium cell runs it for roughly a year. Insert the probe in the tank thermowell, hang the enclosure on the outside.
 
 ![Enclosure and Probe](images/enclosure-probe.jpg)
 ![Wine tank with temperature sensor enclosure](images/wine-tank-enclosure.jpg)
@@ -12,7 +12,7 @@ One 18650-class lithium cell runs it for roughly a year. Insert the probe in the
 
 ## Why
 
-Fermentation temperature drives everything: yeast health, volatile aroma retention, tannin extraction, and whether you get a stuck ferment at 3am on a Saturday. Commercial tank probes are expensive and usually wired. This is a $30 build that reports every minute and shows up as a native sensor in Home Assistant.
+Commercial tank probes are expensive and usually wired. This is a $40 build that reports every minute and shows up as a native sensor in Home Assistant.
 
 ## Features
 
@@ -50,16 +50,16 @@ Fermentation temperature drives everything: yeast health, volatile aroma retenti
 ```
                           3V3
                            │
-                           ├──── DS18B20 VDD (red)
-                           │
-                        [4.7kΩ]                    BAT85 ──┐
+                           ├──── DS18B20 VDD (red) ----------
+                           │                                │
+                        [4.7kΩ]                           BAT85   
                            │                                │
 XIAO D0 ────[100Ω]─────────┴────────────────────────── DS18B20 DATA (yellow)
-                           │                                │
-                           │                        BAT85 ──┘
-                          GND
-                           │
-                           └──── DS18B20 GND (black)
+                                                            │
+                                                          BAT85
+                                                            │
+                                                            │
+                     GND   ──── DS18B20 GND (black) ---------
 ```
 
 - **D0** — 1-Wire data, through the 100 Ω series resistor
@@ -132,8 +132,6 @@ A single non-connectable BTHome v2 advertisement, unencrypted, sent for a few hu
 | `0x0C` | Voltage | uint16, 0.001 V |
 | `0x16` | Battery charging | bool |
 
-The advertisement buffer is built once at startup and mutated in place, so the transmit path does no heap allocation.
-
 Temperature is quantized to the nearest 0.5 °F before transmit (`STEP = 5/18` °C). The DS18B20's real accuracy is ±0.5 °C, so finer resolution just produces jitter in your history graphs. If you'd rather have raw hundredths, set `STEP` to a smaller value or skip the quantization line.
 
 ### Power behaviour
@@ -141,7 +139,7 @@ Temperature is quantized to the nearest 0.5 °F before transmit (`STEP = 5/18` �
 - LEDs are switched **off** immediately before `start_advertising()`. They load the supply enough to cost several dB of RSSI on a small cell — worth knowing if your tank is far from the receiver.
 - Between transmits the board sits in `alarm.light_sleep_until_alarms()`.
 - The hardware watchdog is armed at `INTERVAL * 2 + 5` seconds. Anything that hangs the loop resets the board.
-- The board deliberately resets itself once a day to clear out any slow-accumulating state.
+- The board deliberately resets itself once a day.
 
 ### LED codes
 
@@ -161,7 +159,7 @@ Nothing to configure. With the BTHome integration enabled and a Bluetooth adapte
 
 A couple of things worth setting up once it's in:
 
-- An alert if temperature crosses your ferment band, or if the sensor stops reporting for 15 minutes
+- An alert if temperature is too high, or if the sensor stops reporting for 15 minutes
 - A low-battery notification at 20%
 
 For a quick check without opening Home Assistant, any BTHome-aware scanner app like [BTHome Monitor](https://apps.apple.com/bg/app/bthome-monitor/id6752530680) for ios will show the readings live.
@@ -172,7 +170,7 @@ For a quick check without opening Home Assistant, any BTHome-aware scanner app l
 
 ## Range and placement
 
-BLE advertisements at +8 dBm through a field of stainless tanks and a concrete cellar are not guaranteed. If you're getting dropouts, an ESPHome Bluetooth proxy on a spare ESP32 within line of sight of the tanks costs almost nothing and fixes it completely. That's the usual answer for a multi-tank winery.
+BLE advertisements at +8 dBm through a field of stainless tanks and a concrete cellar are not guaranteed. If you're getting dropouts, an ESPHome Bluetooth proxy on a spare ESP32 within line of sight of the tanks costs almost nothing and fixes it completely. 
 
 ---
 
