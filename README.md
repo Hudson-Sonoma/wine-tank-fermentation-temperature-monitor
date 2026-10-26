@@ -1,8 +1,8 @@
 # wine-tank-fermentation-temperature-monitor
 
-A battery-powered, waterproof temperature probe for monitoring fermenting wine. It broadcasts readings over Bluetooth LE using the [BTHome v2](https://bthome.io/) format, so Home Assistant picks it up automatically (no hub, no gateway, no pairing) 
+A battery-powered, waterproof temperature probe for monitoring fermenting food/drink. It broadcasts readings over Bluetooth LE using the [BTHome v2](https://bthome.io/) format. Home Assistant picks it up automatically.
 
-One 18650-class lithium cell runs it for roughly a year. Insert the probe in the tank thermowell, hang the enclosure on the outside.
+One 5500mAh lithium cell runs it for roughly a year. Insert the probe in the tank thermowell, hang the enclosure on the outside.
 
 ![Enclosure and Probe](images/enclosure-probe.jpg)
 ![Wine tank with temperature sensor enclosure](images/wine-tank-enclosure.jpg)
@@ -12,9 +12,7 @@ One 18650-class lithium cell runs it for roughly a year. Insert the probe in the
 
 ## Why
 
-Commercial tank probes are expensive and usually wired. This is a $40 build that reports every minute and shows up as a native sensor in Home Assistant.
-
-A customer came to me wanting to measure fermenting wine tank temperatures, track them over time, and eventually control tank temperature using a glycol loop. 
+A customer came to me wanting to measure fermenting cider temperatures, track them over time, and eventually control tank temperature using a glycol loop. 
  
 The result is a battery-powered sensor node assembled from modules: a Seeed XIAO nRF52840 on a Grove base, reading a stainless DS18B20 probe and reporting to nearby devices over BTHome. Firmware is CircuitPython, based on sample code published by Seeed.
  
@@ -39,7 +37,7 @@ The rest of the system is off-the-shelf. Home Assistant provides the historian a
  
 The first challenge was networking. I evaluated LoRaWAN and 915 MHz EnOcean FSK before settling on BTHome. The deciding factor was that BTHome can be received by the phones everyone already carries, and the same advertisement is read by Home Assistant and by the Shelly Plug that will eventually control the glycol valve. LoRaWAN and EnOcean both meant another gateway.
  
-I also tried an IN100 BLE transmitter. Its battery life is excellent, but the XIAO nRF52840 turned out to have better BLE performance and far more functionality. CircuitPython and its light sleep implementation are both very good on the nRF52840, which made the development loop fast.
+I also tried an IN100 BLE transmitter. Its battery life is excellent, but the XIAO nRF52840 turned out to have better BLE performance and far more functionality. CircuitPython and its light sleep implementation are both very good on the nRF52840.
  
 ### Getting the battery life
  
@@ -132,7 +130,7 @@ The board runs `code.py` immediately on boot, which makes it awkward to overwrit
 4. Copy the new `code.py` across (Thonny works well).
 5. Reboot again. The new `code.py` runs.
 
-If the drive won't stay mounted long enough, double-tap reset to enter the bootloader, or hold the button on boot for safe mode.
+If the drive won't stay mounted long enough, double-tap Xiao nrf52840 reset button to enter the bootloader, or hold the button on boot for safe mode.
 
 ### Configuration
 
@@ -146,7 +144,7 @@ DEBUG       = True         # False = far fewer heap allocations in the loop
 MAX_SENSOR_FAILS = 5       # consecutive DS18B20 errors before rebooting
 ```
 
-Give each tank its own `DEVICE_NAME`. This is how you'll tell them apart in Home Assistant. Keep it to 10 bytes or the advertisement won't fit in 31 bytes.
+Give each tank its own `DEVICE_NAME`. This is how you'll tell them apart in Home Assistant. Keep the name to 10 bytes or the advertisement won't fit in 31 bytes.
 
 Set `DEBUG = False` for deployment. It cuts allocations in the main loop and saves a little power.
 
@@ -202,7 +200,7 @@ For a quick check without opening Home Assistant, any BTHome-aware scanner app l
 
 ## Range and placement
 
-BLE advertisements at +8 dBm through a field of stainless tanks and a concrete cellar are not guaranteed. If you're getting dropouts, an ESPHome Bluetooth proxy on a spare ESP32 within line of sight of the tanks costs almost nothing and fixes it completely. 
+BLE advertisements at +8 dBm through a field of stainless tanks and a concrete cellar are not guaranteed. If you're getting dropouts, try using an ESPHome Bluetooth proxy with HA. 
 
 ---
 
